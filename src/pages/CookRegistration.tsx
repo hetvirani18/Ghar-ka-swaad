@@ -27,6 +27,12 @@ const CookRegistration = () => {
     pincode: '',
     neighborhood: '',
     upiId: '',
+    specialties: [] as string[],
+    cuisineTypes: [] as string[],
+    timeSlots: '',
+    morning: false,
+    afternoon: false,
+    evening: false,
   });
   
   const [kitchenImages, setKitchenImages] = useState<File[]>([]);
@@ -38,7 +44,17 @@ const CookRegistration = () => {
       
       // Append text fields
       Object.entries(formData).forEach(([key, value]) => {
-        formDataToSend.append(key, value);
+        if (key === 'specialties' || key === 'cuisineTypes') {
+          // Send arrays as JSON strings
+          formDataToSend.append(key, JSON.stringify(value));
+        } else if (key === 'morning' || key === 'afternoon' || key === 'evening') {
+          // Send availability as part of availability object
+          formDataToSend.append(`availability.${key}`, String(value));
+        } else if (key === 'timeSlots') {
+          formDataToSend.append('availability.timeSlots', value as string);
+        } else {
+          formDataToSend.append(key, value as string);
+        }
       });
       
       // Append images
@@ -70,6 +86,21 @@ const CookRegistration = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+  
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setFormData(prev => ({ ...prev, [name]: checked }));
+  };
+  
+  const handleMultiSelectChange = (field: 'specialties' | 'cuisineTypes', value: string) => {
+    setFormData(prev => {
+      const currentValues = prev[field];
+      const newValues = currentValues.includes(value)
+        ? currentValues.filter((v: string) => v !== value)
+        : [...currentValues, value];
+      return { ...prev, [field]: newValues };
+    });
   };
   
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -132,6 +163,22 @@ const CookRegistration = () => {
         return;
       }
     }
+    if (step === 3) {
+      if (formData.specialties.length === 0 || formData.cuisineTypes.length === 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Please select at least one specialty and cuisine type',
+        });
+        return;
+      }
+      if (!formData.morning && !formData.afternoon && !formData.evening) {
+        toast({
+          variant: 'destructive',
+          title: 'Please select at least one availability time slot',
+        });
+        return;
+      }
+    }
     setStep(prev => prev + 1);
   };
   
@@ -173,20 +220,25 @@ const CookRegistration = () => {
           )}
           
           <div className="flex justify-center mb-8">
-            <div className="w-full max-w-md flex items-center">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center 
+            <div className="w-full max-w-2xl flex items-center">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold
                 ${step >= 1 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600'}`}>
                 1
               </div>
               <div className={`h-1 flex-1 ${step >= 2 ? 'bg-orange-500' : 'bg-gray-200'}`}></div>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center 
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold
                 ${step >= 2 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600'}`}>
                 2
               </div>
               <div className={`h-1 flex-1 ${step >= 3 ? 'bg-orange-500' : 'bg-gray-200'}`}></div>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center 
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold
                 ${step >= 3 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600'}`}>
                 3
+              </div>
+              <div className={`h-1 flex-1 ${step >= 4 ? 'bg-orange-500' : 'bg-gray-200'}`}></div>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold
+                ${step >= 4 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                4
               </div>
             </div>
           </div>
@@ -338,6 +390,137 @@ const CookRegistration = () => {
             )}
             
             {step === 3 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Specialties & Availability</h3>
+                
+                {/* Specialties */}
+                <div>
+                  <Label className="block mb-2">Dietary Specialties</Label>
+                  <p className="text-sm text-gray-500 mb-3">
+                    Select all that apply to your cooking style
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['Diabetic-friendly', 'Low-sodium', 'Gluten-free', 'Vegan', 'Heart-healthy', 'Protein-rich', 'Low-carb', 'Keto-friendly'].map((specialty) => (
+                      <label key={specialty} className="flex items-center gap-2 p-2 border rounded-md cursor-pointer hover:bg-gray-50">
+                        <input
+                          type="checkbox"
+                          checked={formData.specialties.includes(specialty)}
+                          onChange={() => handleMultiSelectChange('specialties', specialty)}
+                          className="h-4 w-4 rounded border-gray-300"
+                        />
+                        <span className="text-sm">{specialty}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Cuisine Types */}
+                <div>
+                  <Label className="block mb-2">Cuisine Types</Label>
+                  <p className="text-sm text-gray-500 mb-3">
+                    What type of cuisine do you specialize in?
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['North Indian', 'South Indian', 'Chinese', 'Continental', 'Italian', 'Mexican', 'Thai', 'Bengali', 'Gujarati', 'Punjabi'].map((cuisine) => (
+                      <label key={cuisine} className="flex items-center gap-2 p-2 border rounded-md cursor-pointer hover:bg-gray-50">
+                        <input
+                          type="checkbox"
+                          checked={formData.cuisineTypes.includes(cuisine)}
+                          onChange={() => handleMultiSelectChange('cuisineTypes', cuisine)}
+                          className="h-4 w-4 rounded border-gray-300"
+                        />
+                        <span className="text-sm">{cuisine}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Availability */}
+                <div>
+                  <Label className="block mb-2">Availability</Label>
+                  <p className="text-sm text-gray-500 mb-3">
+                    When are you available to prepare meals?
+                  </p>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 p-3 border rounded-md cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="checkbox"
+                        name="morning"
+                        checked={formData.morning}
+                        onChange={handleCheckboxChange}
+                        className="h-4 w-4 rounded border-gray-300"
+                      />
+                      <div>
+                        <span className="font-medium">Morning</span>
+                        <span className="text-sm text-gray-500 ml-2">(6 AM - 12 PM)</span>
+                      </div>
+                    </label>
+                    <label className="flex items-center gap-2 p-3 border rounded-md cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="checkbox"
+                        name="afternoon"
+                        checked={formData.afternoon}
+                        onChange={handleCheckboxChange}
+                        className="h-4 w-4 rounded border-gray-300"
+                      />
+                      <div>
+                        <span className="font-medium">Afternoon</span>
+                        <span className="text-sm text-gray-500 ml-2">(12 PM - 5 PM)</span>
+                      </div>
+                    </label>
+                    <label className="flex items-center gap-2 p-3 border rounded-md cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="checkbox"
+                        name="evening"
+                        checked={formData.evening}
+                        onChange={handleCheckboxChange}
+                        className="h-4 w-4 rounded border-gray-300"
+                      />
+                      <div>
+                        <span className="font-medium">Evening</span>
+                        <span className="text-sm text-gray-500 ml-2">(5 PM - 10 PM)</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+                
+                {/* Specific Time Slots */}
+                <div>
+                  <Label htmlFor="timeSlots">Specific Time Slots (Optional)</Label>
+                  <Input
+                    id="timeSlots"
+                    name="timeSlots"
+                    value={formData.timeSlots}
+                    onChange={handleChange}
+                    placeholder="e.g., 11 AM - 2 PM, 7 PM - 9 PM"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    Specify exact delivery/pickup times if you have preferred slots
+                  </p>
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={prevStep}
+                    className="flex-1"
+                  >
+                    Back
+                  </Button>
+                  
+                  <Button
+                    type="button"
+                    onClick={nextStep}
+                    className="flex-1"
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {step === 4 && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Kitchen Photos</h3>
                 

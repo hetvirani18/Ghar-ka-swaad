@@ -9,7 +9,28 @@ const cloudinary = require('../config/cloudinary');
 exports.registerCook = asyncHandler(async (req, res) => {
   const { name, email, password, phone, bio, pincode, neighborhood, upiId } = req.body;
   
-  console.log('Cook registration request:', { name, email, phone, pincode, neighborhood });
+  // Parse arrays from JSON strings if they exist
+  const specialties = req.body.specialties ? JSON.parse(req.body.specialties) : [];
+  const cuisineTypes = req.body.cuisineTypes ? JSON.parse(req.body.cuisineTypes) : [];
+  
+  // Parse availability
+  const availability = {
+    morning: req.body['availability.morning'] === 'true',
+    afternoon: req.body['availability.afternoon'] === 'true',
+    evening: req.body['availability.evening'] === 'true',
+    timeSlots: req.body['availability.timeSlots'] || ''
+  };
+  
+  console.log('Cook registration request:', { 
+    name, 
+    email, 
+    phone, 
+    pincode, 
+    neighborhood,
+    specialties,
+    cuisineTypes,
+    availability 
+  });
   
   // Check if user already exists
   const userExists = await User.findOne({ email });
@@ -55,10 +76,13 @@ exports.registerCook = asyncHandler(async (req, res) => {
       role: 'cook'
     });
     
-    // Create cook profile
+    // Create cook profile with new fields
     const cook = await Cook.create({
       name,
       bio,
+      specialties,
+      cuisineTypes,
+      availability,
       location: {
         type: 'Point',
         coordinates,
@@ -167,7 +191,7 @@ exports.getCookById = asyncHandler(async (req, res) => {
       return res.status(400).json({ message: 'Invalid cook ID format' });
     }
     
-    const cook = await Cook.findById(req.params.id);
+    const cook = await Cook.findById(req.params.id).populate('user', 'name email phone');
     
     if (cook) {
       res.json(cook);

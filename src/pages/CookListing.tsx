@@ -50,13 +50,18 @@ const CookListing = () => {
             meal.price >= priceRange[0] && meal.price <= priceRange[1])
         : true;
       
-      // Filter by search term (cook name or meal name)
+      // Enhanced search filter: search by cook name, location, meal name, specialties, and cuisine types
       const matchesSearch = searchTerm === "" || 
         cook.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        cook.location?.neighborhood?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        cook.location?.pincode?.includes(searchTerm) ||
         (cookHasMeals && cook.activeMeals.some(meal => 
-          meal.name.toLowerCase().includes(searchTerm.toLowerCase())));
+          meal.name.toLowerCase().includes(searchTerm.toLowerCase()))) ||
+        (cook.specialties && cook.specialties.some(specialty =>
+          specialty.toLowerCase().includes(searchTerm.toLowerCase()))) ||
+        (cook.cuisineTypes && cook.cuisineTypes.some(cuisine =>
+          cuisine.toLowerCase().includes(searchTerm.toLowerCase())));
       
-      // location-based filtering removed; rely on search and other filters
       return priceInRange && matchesSearch;
     })
     // Then sort
@@ -174,10 +179,10 @@ const CookListing = () => {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <input
                     type="text"
-                    placeholder="Search cooks or dishes..."
+                    placeholder="Search cooks, dishes, location, or dietary needs..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="rounded-md border border-input bg-background pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="rounded-md border border-input bg-background pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring w-80"
                   />
                 </div>
               </div>
@@ -202,13 +207,13 @@ const CookListing = () => {
                       id={cook._id}
                       name={cook.name}
                       image={cook.kitchenImageUrls?.[0] || ''}
-                      rating={cook.averageRating || 4.5}
+                      rating={cook.averageRating || 0}
                       reviews={cook.ratingCount || 0}
                       location={cook.location?.neighborhood || 'Unknown location'}
-                      todaysDish={cook.activeMeals?.[0]?.name || 'No active meals'}
+                      todaysDish={cook.activeMeals?.[0]?.name || ''}
                       dishImage={cook.activeMeals?.[0]?.image || ''}
                       price={cook.activeMeals?.[0]?.price || 0}
-                      calories={cook.activeMeals?.[0]?.calories || 350}
+                      calories={cook.activeMeals?.[0]?.calories || 0}
                       verified={true}
                       distance={cook.distance}
                     />

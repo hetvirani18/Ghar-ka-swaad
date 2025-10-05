@@ -9,8 +9,22 @@ export interface User {
 export interface Cook {
   _id: string;
   userId?: string;
+  user?: {
+    _id: string;
+    name: string;
+    email: string;
+    phone?: string;
+  };
   name: string;
   bio?: string;
+  specialties?: string[]; // e.g., ['Diabetic-friendly', 'Low-sodium', 'Gluten-free']
+  cuisineTypes?: string[]; // e.g., ['North Indian', 'South Indian', 'Chinese']
+  availability?: {
+    morning?: boolean;
+    afternoon?: boolean;
+    evening?: boolean;
+    timeSlots?: string; // e.g., "11 AM - 2 PM, 7 PM - 9 PM"
+  };
   location: {
     type: string;
     coordinates: [number, number]; // [longitude, latitude]
