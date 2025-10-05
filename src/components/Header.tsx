@@ -3,7 +3,6 @@ import { Button } from "../components/ui/button";
 import { 
   ChefHat, 
   LogOut, 
-  Settings, 
   User,
   ChevronDown,
   Home,
@@ -111,13 +110,6 @@ export const Header = () => {
                     </Link>
                   </DropdownMenuItem>
                 )}
-                
-                <DropdownMenuItem asChild>
-                  <Link to="/settings" className="w-full cursor-pointer">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </Link>
-                </DropdownMenuItem>
                 
                 {user?.role === 'user' && (
                   <DropdownMenuItem asChild>
