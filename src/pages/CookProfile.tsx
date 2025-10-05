@@ -365,8 +365,6 @@ const CookProfile = () => {
       </main>
       
       <Footer />
-
-      <Footer />
     </div>
   );
 };
