@@ -83,11 +83,10 @@ exports.registerCook = asyncHandler(async (req, res) => {
     // This will be updated later with kitchen images and other details
     const cook = await Cook.create({
       name: user.name,
-      bio: `Cook profile for ${user.name}`,
-      user: user._id,
-      // location left as defaults in schema
-      kitchenImageUrls: [],
-      upiId: ''
+      bio: `Cook profile for ${user.name}. Profile setup pending.`,
+      user: user._id
+      // kitchenImageUrls and upiId will be added when cook completes profile
+      // location will use schema defaults
     });
 
     // This is just a placeholder - the real cook registration with images
@@ -102,9 +101,18 @@ exports.registerCook = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     console.error('Error in registerCook:', error);
-    res.status(500).json({
-      message: 'Server error during cook registration',
-      error: error.message
+    
+    // Send appropriate error response
+    const statusCode = error.name === 'ValidationError' ? 400 : 500;
+    res.status(statusCode).json({
+      message: error.name === 'ValidationError' 
+        ? 'Validation error during cook registration' 
+        : 'Server error during cook registration',
+      error: error.message,
+      details: error.errors ? Object.keys(error.errors).map(key => ({
+        field: key,
+        message: error.errors[key].message
+      })) : undefined
     });
   }
 });

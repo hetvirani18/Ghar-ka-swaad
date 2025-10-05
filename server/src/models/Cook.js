@@ -34,19 +34,23 @@ const cookSchema = new mongoose.Schema({
   },
   kitchenImageUrls: {
     type: [String],
-    required: true,
+    required: false,
+    default: [],
     validate: [
       {
         validator: function(array) {
+          // Only validate if array has items
+          if (array.length === 0) return true;
           return array.length >= 3;
         },
-        message: 'At least 3 kitchen images are required'
+        message: 'If providing kitchen images, at least 3 are required'
       }
     ]
   },
   upiId: {
     type: String,
-    required: true
+    required: false,
+    default: ''
   },
   averageRating: {
     type: Number,
