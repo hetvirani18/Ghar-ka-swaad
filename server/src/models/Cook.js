@@ -14,6 +14,38 @@ const cookSchema = new mongoose.Schema({
     ref: 'User',
     required: false
   },
+  specialties: {
+    type: [String],
+    default: [],
+    // Examples: ['Diabetic-friendly', 'Low-sodium', 'Gluten-free', 'Vegan', 'Heart-healthy', 'Protein-rich']
+  },
+  cuisineTypes: {
+    type: [String],
+    default: [],
+    // Examples: ['North Indian', 'South Indian', 'Chinese', 'Continental', 'Italian']
+  },
+  availability: {
+    morning: {
+      type: Boolean,
+      default: false,
+      // 6 AM - 12 PM
+    },
+    afternoon: {
+      type: Boolean,
+      default: false,
+      // 12 PM - 5 PM
+    },
+    evening: {
+      type: Boolean,
+      default: false,
+      // 5 PM - 10 PM
+    },
+    timeSlots: {
+      type: String,
+      default: '',
+      // Example: "11 AM - 2 PM, 7 PM - 9 PM"
+    }
+  },
   location: {
     type: {
       type: String,

@@ -4,7 +4,6 @@ import { CookCard } from "./CookCard";
 import { Loader2 } from "lucide-react";
 import { cooksApi } from "../services/api";
 import { Cook } from "../types";
-import placeholderImage from "@/assets/food-dal.jpg";
 
 // Use React Query to fetch top rated cooks
 
@@ -66,13 +65,13 @@ export const FeaturedCooks = () => {
                 id={cook._id}
                 name={cook.name}
                 image={cook.kitchenImageUrls?.[0] || ''}
-                rating={cook.averageRating || 4.5}
+                rating={cook.averageRating || 0}
                 reviews={cook.ratingCount || 0}
                 location={cook.location?.neighborhood || 'Unknown location'}
-                todaysDish={cook.activeMeals?.[0]?.name || 'No active meals'}
-                dishImage={cook.activeMeals?.[0]?.image || placeholderImage}
+                todaysDish={cook.activeMeals?.[0]?.name || ''}
+                dishImage={cook.activeMeals?.[0]?.image || ''}
                 price={cook.activeMeals?.[0]?.price || 0}
-                calories={cook.activeMeals?.[0]?.calories || 350}
+                calories={cook.activeMeals?.[0]?.calories || 0}
                 verified={true}
               />
             ))}

@@ -4,17 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MapPin, Star, ShieldCheck, Clock, Heart, Share2, Phone, MessageCircle, ShoppingCart } from "lucide-react";
+import { MapPin, Star, ShieldCheck, Clock, Share2, Phone, ShoppingCart, Mail } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useCart } from "../context/CartContext";
 import { useToast } from "../components/ui/use-toast";
 import { Cook, Meal } from "../types";
 import { cooksApi, mealsApi, ordersApi } from "../services/api";
-import cook1 from "@/assets/cook-1.jpg";
-import foodDal from "@/assets/food-dal.jpg";
-import foodParatha from "@/assets/food-paratha.jpg";
-import foodRajma from "@/assets/food-rajma.jpg";
 
 const CookProfile = () => {
   const { id } = useParams();
@@ -91,6 +87,58 @@ const CookProfile = () => {
     
     addToCart(meal, cook._id, cook.name);
   };
+  
+  const handleContactCook = () => {
+    if (!cook?.user?.phone) {
+      toast({
+        title: "Contact Information Not Available",
+        description: "Phone number is not available for this cook. Please contact support.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Open phone dialer
+    window.location.href = `tel:${cook.user.phone}`;
+  };
+  
+  const handleEmailCook = () => {
+    if (!cook?.user?.email) {
+      toast({
+        title: "Email Not Available",
+        description: "Email address is not available for this cook.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Open email client
+    window.location.href = `mailto:${cook.user.email}?subject=Inquiry about your meals on Ghar-Ka-Swaad`;
+  };
+  
+  const handleShare = async () => {
+    const shareData = {
+      title: `${cook?.name} - Ghar-Ka-Swaad`,
+      text: `Check out ${cook?.name}'s delicious home-cooked meals!`,
+      url: window.location.href,
+    };
+    
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        // Fallback: Copy to clipboard
+        await navigator.clipboard.writeText(window.location.href);
+        toast({
+          title: "Link Copied!",
+          description: "Profile link copied to clipboard",
+          variant: "default",
+        });
+      }
+    } catch (err) {
+      console.error('Error sharing:', err);
+    }
+  };
 
   if (error) {
     return (
@@ -125,10 +173,10 @@ const CookProfile = () => {
     );
   }
 
-  // Fallback image if cook doesn't have kitchen images
+  // Fallback image handling - use first kitchen image if available
   const cookImage = cook.kitchenImageUrls?.length > 0 
     ? cook.kitchenImageUrls[0] 
-    : cook1;
+    : 'https://res.cloudinary.com/dpezwdjkk/image/upload/v1718612278/homebite/kitchens/placeholder_cook_bbe8jd.jpg';
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -174,28 +222,74 @@ const CookProfile = () => {
                   </div>
                   <div className="flex items-center gap-1 text-muted-foreground">
                     <Clock className="h-4 w-4" />
-                    <span className="text-sm">Delivery: 11 AM - 2 PM, 7 PM - 9 PM</span>
+                    <span className="text-sm">
+                      {cook.availability?.timeSlots || "Delivery: 11 AM - 2 PM, 7 PM - 9 PM"}
+                    </span>
                   </div>
                 </div>
+
+                {/* Specialties and Cuisine Types */}
+                {(cook.specialties && cook.specialties.length > 0) || (cook.cuisineTypes && cook.cuisineTypes.length > 0) ? (
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    {cook.specialties && cook.specialties.map((specialty) => (
+                      <Badge key={specialty} variant="secondary" className="gap-1">
+                        <ShieldCheck className="h-3 w-3" />
+                        {specialty}
+                      </Badge>
+                    ))}
+                    {cook.cuisineTypes && cook.cuisineTypes.map((cuisine) => (
+                      <Badge key={cuisine} variant="outline" className="gap-1">
+                        {cuisine}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : null}
 
                 <p className="text-muted-foreground mb-6 max-w-2xl">
                   {cook.bio || "No bio provided by the cook."}
                 </p>
 
+                {/* Contact Information */}
+                {cook.user && (cook.user.phone || cook.user.email) && (
+                  <div className="mb-6 p-4 bg-muted/30 rounded-lg border border-border">
+                    <h3 className="text-sm font-semibold text-foreground mb-3">Contact Information</h3>
+                    <div className="flex flex-col gap-2">
+                      {cook.user.phone && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Phone className="h-4 w-4 text-primary" />
+                          <a href={`tel:${cook.user.phone}`} className="text-foreground hover:text-primary hover:underline">
+                            {cook.user.phone}
+                          </a>
+                        </div>
+                      )}
+                      {cook.user.email && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Mail className="h-4 w-4 text-primary" />
+                          <a href={`mailto:${cook.user.email}`} className="text-foreground hover:text-primary hover:underline">
+                            {cook.user.email}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex flex-wrap gap-3">
-                  <Button variant="hero" size="lg">
-                    <Phone className="h-4 w-4 mr-2" />
-                    Contact Cook
-                  </Button>
-                  <Button variant="outline" size="lg">
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    Message
-                  </Button>
-                  <Button variant="ghost" size="lg">
-                    <Heart className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="lg">
-                    <Share2 className="h-4 w-4" />
+                  {cook.user?.phone && (
+                    <Button variant="hero" size="lg" onClick={handleContactCook}>
+                      <Phone className="h-4 w-4 mr-2" />
+                      Call Now
+                    </Button>
+                  )}
+                  {cook.user?.email && (
+                    <Button variant="outline" size="lg" onClick={handleEmailCook}>
+                      <Mail className="h-4 w-4 mr-2" />
+                      Send Email
+                    </Button>
+                  )}
+                  <Button variant="outline" size="lg" onClick={handleShare}>
+                    <Share2 className="h-4 w-4 mr-2" />
+                    Share Profile
                   </Button>
                 </div>
               </div>
@@ -331,6 +425,67 @@ const CookProfile = () => {
                       </div>
                     </div>
                   </div>
+                  
+                  {/* Availability Schedule */}
+                  {cook.availability && (cook.availability.morning || cook.availability.afternoon || cook.availability.evening) && (
+                    <div>
+                      <h3 className="font-semibold text-lg text-foreground mb-2">Availability</h3>
+                      <div className="space-y-2">
+                        {cook.availability.morning && (
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-primary" />
+                            <span className="text-sm">Morning (6 AM - 12 PM)</span>
+                          </div>
+                        )}
+                        {cook.availability.afternoon && (
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-primary" />
+                            <span className="text-sm">Afternoon (12 PM - 5 PM)</span>
+                          </div>
+                        )}
+                        {cook.availability.evening && (
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-primary" />
+                            <span className="text-sm">Evening (5 PM - 10 PM)</span>
+                          </div>
+                        )}
+                        {cook.availability.timeSlots && (
+                          <div className="mt-2 p-2 bg-muted/50 rounded-md">
+                            <p className="text-sm font-medium">Preferred Time Slots:</p>
+                            <p className="text-sm text-muted-foreground">{cook.availability.timeSlots}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Specialties */}
+                  {cook.specialties && cook.specialties.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold text-lg text-foreground mb-2">Dietary Specialties</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {cook.specialties.map((specialty) => (
+                          <Badge key={specialty} variant="secondary">
+                            {specialty}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Cuisine Types */}
+                  {cook.cuisineTypes && cook.cuisineTypes.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold text-lg text-foreground mb-2">Cuisine Types</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {cook.cuisineTypes.map((cuisine) => (
+                          <Badge key={cuisine} variant="outline">
+                            {cuisine}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   
                   {cook.kitchenImageUrls && cook.kitchenImageUrls.length > 0 && (
                     <div>
