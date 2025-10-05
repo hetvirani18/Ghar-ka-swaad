@@ -16,6 +16,15 @@ const orderSchema = new mongoose.Schema({
     ref: 'Meal',
     required: true
   },
+  quantity: {
+    type: Number,
+    default: 1,
+    min: 1
+  },
+  totalPrice: {
+    type: Number,
+    required: false
+  },
   status: {
     type: String,
     enum: ['Placed', 'Completed', 'Cancelled'],

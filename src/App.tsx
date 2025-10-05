@@ -12,6 +12,7 @@ import Auth from "./pages/Auth";
 import UserProfile from "./pages/UserProfile";
 import CookRegistration from "./pages/CookRegistration";
 import CookDashboard from "./pages/CookDashboard";
+import CookAnalytics from "./pages/CookAnalytics";
 import Orders from "./pages/Orders";
 import MealListing from "./pages/MealListing";
 import NotFound from "./pages/NotFound";
@@ -34,6 +35,7 @@ const App = () => (
               <Route path="/profile" element={<UserProfile />} />
               <Route path="/become-a-cook" element={<CookRegistration />} />
               <Route path="/cook-dashboard" element={<CookDashboard />} />
+              <Route path="/cook-analytics" element={<CookAnalytics />} />
               <Route path="/orders" element={<Orders />} />
               <Route path="/meals" element={<MealListing />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

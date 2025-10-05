@@ -61,8 +61,23 @@ export interface Order {
   userId: string;
   cookId: string;
   mealId: string | Meal;
+  quantity?: number;
+  totalPrice?: number;
   status: 'Placed' | 'Completed' | 'Cancelled';
   rating?: number;
   reviewText?: string;
   createdAt: string;
+}
+
+export interface RevenueData {
+  date: string;
+  revenue: number;
+  orders: number;
+}
+
+export interface MealRevenueData {
+  mealName: string;
+  revenue: number;
+  orders: number;
+  avgPrice: number;
 }

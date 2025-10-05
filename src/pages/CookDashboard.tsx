@@ -8,7 +8,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Edit, Trash, ShoppingBag, FileText, Clock, Check, X, AlertTriangle, Star } from 'lucide-react';
+import { Loader2, Edit, Trash, ShoppingBag, FileText, Clock, Check, X, AlertTriangle, Star, TrendingUp } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '../components/ui/use-toast';
 import { Header } from '../components/Header';
@@ -331,8 +331,19 @@ const CookDashboard = () => {
       <Header />
       
       <main className="flex-1 container mx-auto p-4 md:p-6">
-        <h2 className="text-3xl font-bold mb-2">Cook Dashboard</h2>
-        <p className="text-gray-500 mb-8">Manage your profile and meals</p>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-3xl font-bold mb-2">Cook Dashboard</h2>
+            <p className="text-gray-500">Manage your profile and meals</p>
+          </div>
+          <Button 
+            onClick={() => navigate('/cook-analytics')}
+            className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
+          >
+            <TrendingUp className="h-4 w-4 mr-2" />
+            View Analytics
+          </Button>
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-1">
