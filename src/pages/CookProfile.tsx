@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import { useCart } from "../context/CartContext";
 import { useToast } from "../components/ui/use-toast";
 import { Cook, Meal } from "../types";
-import { cooksApi, mealsApi } from "../services/api";
+import { cooksApi, mealsApi, ordersApi } from "../services/api";
 import cook1 from "@/assets/cook-1.jpg";
 import foodDal from "@/assets/food-dal.jpg";
 import foodParatha from "@/assets/food-paratha.jpg";
@@ -29,10 +29,10 @@ const CookProfile = () => {
   const [reviews, setReviews] = useState([]);
 
   // Function to format date relative to current date
-  const formatDate = (dateStr) => {
+  const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const now = new Date();
-    const diffTime = Math.abs(now - date);
+    const diffTime = Math.abs(now.getTime() - date.getTime());
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     
     if (diffDays === 0) return 'Today';
@@ -58,15 +58,18 @@ const CookProfile = () => {
         const mealsData = await mealsApi.getByCookId(id);
         setMeals(mealsData);
 
-        // Get reviews from orders if they exist
-        if (cookData && cookData.reviews && cookData.reviews.length > 0) {
-          setReviews(cookData.reviews.map(review => ({
-            name: review.userName || 'Anonymous User',
-            rating: review.rating,
-            comment: review.reviewText || '',
-            date: formatDate(review.createdAt)
-          })));
-        }
+        // Fetch orders for this cook and filter those with reviews
+        const ordersData = await ordersApi.getByCookId(id);
+        const reviewsData = ordersData
+          .filter(order => order.rating && order.rating > 0)
+          .map(order => ({
+            name: (order.userId as any)?.name || 'Anonymous User',
+            rating: order.rating,
+            comment: order.reviewText || '',
+            date: formatDate(order.createdAt)
+          }));
+        
+        setReviews(reviewsData);
       } catch (err) {
         console.error('Error loading cook profile:', err);
         setError("Failed to load cook profile. Please try again.");

@@ -8,7 +8,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Edit, Trash, ShoppingBag, FileText, Clock, Check, X, AlertTriangle } from 'lucide-react';
+import { Loader2, Edit, Trash, ShoppingBag, FileText, Clock, Check, X, AlertTriangle, Star } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '../components/ui/use-toast';
 import { Header } from '../components/Header';
@@ -300,6 +300,24 @@ const CookDashboard = () => {
     enabled: !!cook?._id,
   });
 
+  const { data: reviews, isLoading: reviewsLoading } = useQuery({
+    queryKey: ['reviews', cook?._id],
+    queryFn: async () => {
+      if (!cook?._id) return [];
+      const orders = await ordersApi.getByCookId(cook._id);
+      return orders
+        .filter(order => order.rating && order.rating > 0)
+        .map(order => ({
+          id: order._id,
+          name: (order.userId as any)?.name || 'Anonymous User',
+          rating: order.rating,
+          comment: order.reviewText || '',
+          date: formatDistanceToNow(new Date(order.createdAt), { addSuffix: true })
+        }));
+    },
+    enabled: !!cook?._id,
+  });
+
   if (!cook) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -369,6 +387,10 @@ const CookDashboard = () => {
                   <TabsTrigger value="orders" className="flex-1">
                     <ShoppingBag className="h-4 w-4 mr-2" />
                     Orders
+                  </TabsTrigger>
+                  <TabsTrigger value="reviews" className="flex-1">
+                    <Star className="h-4 w-4 mr-2" />
+                    Reviews
                   </TabsTrigger>
                 </TabsList>
                 
@@ -445,6 +467,42 @@ const CookDashboard = () => {
                 <TabsContent value="orders">
                   <h3 className="text-xl font-semibold mb-6">Manage Orders</h3>
                   {cook && <OrdersTab cookId={cook._id} />}
+                </TabsContent>
+                
+                <TabsContent value="reviews">
+                  <h3 className="text-xl font-semibold mb-6">Your Reviews</h3>
+                  
+                  {reviewsLoading ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+                    </div>
+                  ) : !reviews || reviews.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">No reviews yet.</p>
+                      <p className="text-sm text-gray-400 mt-2">Reviews will appear here once customers rate your meals.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {reviews.map((review) => (
+                        <div key={review.id} className="bg-gray-50 p-4 rounded-lg">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="font-medium">{review.name}</div>
+                              <div className="flex items-center">
+                                {[...Array(review.rating)].map((_, i) => (
+                                  <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                ))}
+                              </div>
+                            </div>
+                            <div className="text-sm text-gray-500">{review.date}</div>
+                          </div>
+                          {review.comment && (
+                            <p className="text-gray-700 mt-2 italic">"{review.comment}"</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </TabsContent>
               </Tabs>
             </div>
