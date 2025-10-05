@@ -1,6 +1,6 @@
 import { Cook, Meal, Order, User } from '../types';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'https://ghar-ka-swaad.onrender.com';
 
 // Auth API
 export const authApi = {
