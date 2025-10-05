@@ -8,7 +8,8 @@ import {
   Home,
   FileText,
   Users,
-  ShoppingBag
+  ShoppingBag,
+  UtensilsCrossed
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { Cart } from "./Cart";
@@ -50,6 +51,13 @@ export const Header = () => {
           >
             <Users className="h-4 w-4" />
             Find Cooks
+          </Link>
+          <Link 
+            to="/meals" 
+            className="text-sm font-medium hover:text-primary transition-colors flex items-center gap-1"
+          >
+            <UtensilsCrossed className="h-4 w-4" />
+            Order Food
           </Link>
           {user?.role === 'cook' && (
             <Link to="/cook-dashboard" className="text-sm font-medium hover:text-primary transition-colors flex items-center gap-1">

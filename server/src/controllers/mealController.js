@@ -51,3 +51,18 @@ exports.getMealsByCookId = asyncHandler(async (req, res) => {
   
   res.json(meals);
 });
+
+// @desc    Get all available meals
+// @route   GET /api/meals
+// @access  Public
+exports.getAllMeals = asyncHandler(async (req, res) => {
+  const meals = await Meal.find({
+    isAvailable: true,
+    quantityAvailable: { $gt: 0 }
+  }).populate({
+    path: 'cookId',
+    select: 'name location kitchenImageUrls averageRating'
+  });
+  
+  res.json(meals);
+});

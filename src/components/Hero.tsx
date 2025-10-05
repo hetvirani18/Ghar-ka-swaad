@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { MapPin, ShieldCheck, Utensils } from "lucide-react";
+import { MapPin, ShieldCheck, Utensils, UtensilsCrossed } from "lucide-react";
 import heroImage from "@/assets/hero-cook.jpg";
 
 export const Hero = () => {
@@ -41,6 +41,19 @@ export const Hero = () => {
               >
                 <MapPin className="h-5 w-5" />
                 Find Cooks
+              </Button>
+
+              <Button 
+                variant="secondary" 
+                size="xl" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.location.href = "/meals";
+                }}
+                className="bg-warm-orange hover:bg-warm-orange/90 text-white"
+              >
+                <UtensilsCrossed className="h-5 w-5" />
+                Order Food
               </Button>
               
               <Button variant="outline" size="xl" asChild>

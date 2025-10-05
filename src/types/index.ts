@@ -29,7 +29,7 @@ export interface Cook {
 
 export interface Meal {
   _id?: string;
-  cookId?: string;
+  cookId?: string | Cook;
   name: string;
   description?: string;
   image?: string;

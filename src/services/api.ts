@@ -190,24 +190,53 @@ export const mealsApi = {
     
     return response.json();
   },
+
+  getAll: async (): Promise<Meal[]> => {
+    try {
+      const response = await fetch(`${API_URL}/meals`);
+      
+      if (!response.ok) {
+        console.error('Server error fetching meals:', await response.text());
+        throw new Error(`Failed to fetch all meals: ${response.status}`);
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Network or parsing error:', error);
+      return [];
+    }
+  },
 };
 
 // Orders API
 export const ordersApi = {
   create: async (orderData: { userId: string; cookId: string; mealId: string }): Promise<Order> => {
-    const response = await fetch(`${API_URL}/orders`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(orderData),
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to create order');
+    try {
+      // Validate the data before sending
+      if (!orderData.userId || !orderData.cookId || !orderData.mealId) {
+        console.error('Invalid order data:', orderData);
+        throw new Error('Missing required fields in order data');
+      }
+      
+      const response = await fetch(`${API_URL}/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Server error (${response.status}):`, errorText);
+        throw new Error(`Failed to create order: ${response.status} ${errorText}`);
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Order creation error:', error);
+      throw error;
     }
-    
-    return response.json();
   },
   
   rateOrder: async (orderId: string, ratingData: { rating: number; reviewText?: string }): Promise<Order> => {

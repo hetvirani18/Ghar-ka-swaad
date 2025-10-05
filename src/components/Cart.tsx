@@ -35,6 +35,21 @@ export const Cart = () => {
       return;
     }
     
+    // Validate all items have proper IDs
+    const invalidItems = cartItems.filter(
+      item => !item.cookId || !item.meal._id || typeof item.cookId !== 'string'
+    );
+    
+    if (invalidItems.length > 0) {
+      console.error('Invalid cart items:', invalidItems);
+      toast({
+        title: "Invalid items in cart",
+        description: "Some items in your cart have invalid data. Please try removing and adding them again.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     // Group cart items by cook
     const itemsByCook = cartItems.reduce((acc, item) => {
       if (!acc[item.cookId]) {
@@ -50,11 +65,15 @@ export const Cart = () => {
       // Create an order for each cook
       for (const [cookId, items] of Object.entries(itemsByCook)) {
         for (const item of items) {
-          await ordersApi.create({
+          // Ensure we're sending string IDs
+          const orderData = {
             userId: user!._id,
             cookId: cookId,
-            mealId: item.meal._id!
-          });
+            mealId: item.meal._id as string
+          };
+          
+          console.log('Creating order with data:', orderData);
+          await ordersApi.create(orderData);
         }
       }
       
@@ -66,6 +85,7 @@ export const Cart = () => {
       clearCart();
       navigate('/orders');
     } catch (error) {
+      console.error('Order creation error:', error);
       toast({
         title: "Failed to place order",
         description: "There was an error processing your order. Please try again.",
