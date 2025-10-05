@@ -1,12 +1,29 @@
 const Cook = require('../models/Cook');
+const User = require('../models/User');
 const asyncHandler = require('express-async-handler');
 const cloudinary = require('../config/cloudinary');
 
-// @desc    Register a new cook
+// @desc    Register a new cook with user account
 // @route   POST /api/cooks/register
 // @access  Public
 exports.registerCook = asyncHandler(async (req, res) => {
-  const { name, bio, pincode, neighborhood, upiId } = req.body;
+  const { name, email, password, phone, bio, pincode, neighborhood, upiId } = req.body;
+  
+  console.log('Cook registration request:', { name, email, phone, pincode, neighborhood });
+  
+  // Check if user already exists
+  const userExists = await User.findOne({ email });
+  
+  if (userExists) {
+    res.status(400);
+    throw new Error('User already exists with this email');
+  }
+  
+  // Validate required fields
+  if (!name || !email || !password || !phone || !bio || !pincode || !neighborhood || !upiId) {
+    res.status(400);
+    throw new Error('Please provide all required fields');
+  }
   
   // For MVP, using hardcoded coordinates based on pincode
   // In a real app, we would use a geocoding service
@@ -18,35 +35,62 @@ exports.registerCook = asyncHandler(async (req, res) => {
     throw new Error('Please upload at least 3 kitchen images');
   }
   
-  // Upload images to Cloudinary
-  const uploadPromises = req.files.map(file => 
-    cloudinary.uploader.upload(file.path, {
-      folder: 'homebite/kitchens',
-    })
-  );
-  
-  const uploadResults = await Promise.all(uploadPromises);
-  const kitchenImageUrls = uploadResults.map(result => result.secure_url);
-  
-  // Create cook profile
-  const cook = await Cook.create({
-    name,
-    bio,
-    location: {
-      type: 'Point',
-      coordinates,
-      pincode,
-      neighborhood
-    },
-    kitchenImageUrls,
-    upiId,
-  });
-  
-  if (cook) {
-    res.status(201).json(cook);
-  } else {
-    res.status(400);
-    throw new Error('Invalid cook data');
+  try {
+    // Upload images to Cloudinary
+    const uploadPromises = req.files.map(file => 
+      cloudinary.uploader.upload(file.path, {
+        folder: 'homebite/kitchens',
+      })
+    );
+    
+    const uploadResults = await Promise.all(uploadPromises);
+    const kitchenImageUrls = uploadResults.map(result => result.secure_url);
+    
+    // Create user account first
+    const user = await User.create({
+      name,
+      email,
+      password, // In production, this should be hashed
+      phone,
+      role: 'cook'
+    });
+    
+    // Create cook profile
+    const cook = await Cook.create({
+      name,
+      bio,
+      location: {
+        type: 'Point',
+        coordinates,
+        pincode,
+        neighborhood
+      },
+      kitchenImageUrls,
+      upiId,
+      user: user._id
+    });
+    
+    if (cook) {
+      res.status(201).json({
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role
+        },
+        cook: cook
+      });
+    } else {
+      // If cook creation fails, delete the user
+      await User.findByIdAndDelete(user._id);
+      res.status(400);
+      throw new Error('Failed to create cook profile');
+    }
+  } catch (error) {
+    console.error('Error in registerCook:', error);
+    res.status(500);
+    throw new Error(`Server error during cook registration: ${error.message}`);
   }
 });
 
