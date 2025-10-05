@@ -274,6 +274,23 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return distance;
 }
 
+// @desc    Get cook's payment details
+// @route   GET /api/cooks/:id/payment-details
+// @access  Public (should be Private in real app)
+exports.getCookPaymentDetails = asyncHandler(async (req, res) => {
+  const cook = await Cook.findById(req.params.id);
+  
+  if (!cook) {
+    res.status(404);
+    throw new Error('Cook not found');
+  }
+  
+  res.json({
+    name: cook.name,
+    upiId: cook.upiId || 'UPI ID not available'
+  });
+});
+
 // Helper function to simulate geocoding
 function simulateGeocode(pincode) {
   // This is a simple simulation - in a real app we'd use a geocoding service

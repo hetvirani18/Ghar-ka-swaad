@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { 
   Sheet, 
@@ -13,17 +13,56 @@ import { ShoppingCart, Trash2, Plus, Minus, X } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
-import { ordersApi } from '../services/api';
+import { ordersApi, cooksApi, paymentApi } from '../services/api';
 import { useToast } from './ui/use-toast';
 import { Separator } from './ui/separator';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription
+} from './ui/dialog';
+
+interface PaymentInfo {
+  cookId: string;
+  cookName: string;
+  upiId: string;
+  totalAmount: number;
+  items: any[];
+}
 
 export const Cart = () => {
   const { cartItems, removeFromCart, updateQuantity, clearCart, cartTotal, cartCount } = useCart();
   const { isAuthenticated, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [isCheckingOut, setIsCheckingOut] = React.useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [paymentInfo, setPaymentInfo] = useState<PaymentInfo[]>([]);
+  const [paymentComplete, setPaymentComplete] = useState(false);
   
+  // Group cart items by cook
+  const groupedItems = React.useMemo(() => {
+    const groups: Record<string, typeof cartItems> = {};
+    cartItems.forEach(item => {
+      if (!groups[item.cookId]) {
+        groups[item.cookId] = [];
+      }
+      groups[item.cookId].push(item);
+    });
+    return groups;
+  }, [cartItems]);
+  
+  // Calculate total for each cook
+  const calculateCookTotals = () => {
+    return Object.entries(groupedItems).map(([cookId, items]) => {
+      const totalAmount = items.reduce((sum, item) => sum + (item.meal.price * item.quantity), 0);
+      return { cookId, items, totalAmount };
+    });
+  };
+
   const handleCheckout = async () => {
     if (!isAuthenticated) {
       toast({
@@ -50,45 +89,46 @@ export const Cart = () => {
       return;
     }
     
-    // Group cart items by cook
-    const itemsByCook = cartItems.reduce((acc, item) => {
-      if (!acc[item.cookId]) {
-        acc[item.cookId] = [];
-      }
-      acc[item.cookId].push(item);
-      return acc;
-    }, {} as Record<string, typeof cartItems>);
-    
     setIsCheckingOut(true);
     
     try {
-      // Create an order for each cook
-      for (const [cookId, items] of Object.entries(itemsByCook)) {
-        for (const item of items) {
-          // Ensure we're sending string IDs
-          const orderData = {
-            userId: user!._id,
-            cookId: cookId,
-            mealId: item.meal._id as string
-          };
-          
-          console.log('Creating order with data:', orderData);
-          await ordersApi.create(orderData);
-        }
-      }
+      // Calculate totals per cook
+      const cookTotals = calculateCookTotals();
       
-      toast({
-        title: "Order placed successfully!",
-        description: "You can track your orders in the 'My Orders' section",
-      });
+      // Fetch payment info for each cook
+      const paymentDetails = await Promise.all(
+        cookTotals.map(async ({ cookId, items, totalAmount }) => {
+          try {
+            const paymentInfo = await paymentApi.getCookPaymentDetails(cookId);
+            return {
+              cookId,
+              cookName: paymentInfo.name,
+              upiId: paymentInfo.upiId || 'No UPI ID provided',
+              totalAmount,
+              items
+            };
+          } catch (error) {
+            console.error(`Error fetching payment details for cook ${cookId}:`, error);
+            // Fallback to cook name from the first item if payment API fails
+            const cookName = items[0]?.cookName || 'Unknown Cook';
+            return {
+              cookId,
+              cookName,
+              upiId: 'UPI information unavailable',
+              totalAmount,
+              items
+            };
+          }
+        })
+      );
       
-      clearCart();
-      navigate('/orders');
+      setPaymentInfo(paymentDetails);
+      setPaymentDialogOpen(true);
     } catch (error) {
-      console.error('Order creation error:', error);
+      console.error('Error preparing checkout:', error);
       toast({
-        title: "Failed to place order",
-        description: "There was an error processing your order. Please try again.",
+        title: "Failed to prepare checkout",
+        description: "There was an error preparing your checkout. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -96,7 +136,54 @@ export const Cart = () => {
     }
   };
   
+  const handleConfirmPayment = async () => {
+    setIsCheckingOut(true);
+    
+    try {
+      // Create orders for all items
+      const orders = cartItems.map(item => ({
+        userId: user!._id,
+        cookId: item.cookId,
+        mealId: item.meal._id as string,
+        quantity: item.quantity
+      }));
+      
+      // Submit all orders
+      await ordersApi.createMultiple(orders);
+      
+      setPaymentComplete(true);
+      clearCart(); // Clear cart immediately after successful order creation
+      toast({
+        title: "Order placed successfully!",
+        description: "You can track your orders in the 'My Orders' section",
+      });
+    } catch (error) {
+      console.error('Order creation error:', error);
+      toast({
+        title: "Failed to place order",
+        description: "There was an error processing your order. Please try again.",
+        variant: "destructive"
+      });
+      setPaymentDialogOpen(false);
+    } finally {
+      setIsCheckingOut(false);
+    }
+  };
+  
+  const handleClosePaymentDialog = (open: boolean) => {
+    if (!open) {
+      const wasPaymentComplete = paymentComplete;
+      setPaymentDialogOpen(false);
+      setPaymentComplete(false); // Reset payment complete state
+      
+      if (wasPaymentComplete) {
+        navigate('/orders');
+      }
+    }
+  };
+  
   return (
+    <React.Fragment>
     <Sheet>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
@@ -235,5 +322,78 @@ export const Cart = () => {
         )}
       </SheetContent>
     </Sheet>
+    
+    {/* Payment Dialog */}
+    <Dialog open={paymentDialogOpen} onOpenChange={handleClosePaymentDialog}>
+      <DialogContent className="max-w-md sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>
+            {paymentComplete ? 'Order Placed Successfully!' : 'Complete Payment'}
+          </DialogTitle>
+          {!paymentComplete && (
+            <DialogDescription>
+              Please make payments to the following UPI IDs before confirming your order.
+            </DialogDescription>
+          )}
+        </DialogHeader>
+        
+        {paymentComplete ? (
+          <div className="py-4">
+            <p>Thank you for your order! Your food will be prepared by our talented home cooks.</p>
+          </div>
+        ) : (
+          <div className="py-4 space-y-6">
+            {paymentInfo.map((info, index) => (
+              <div key={info.cookId} className="space-y-2">
+                <h3 className="font-medium text-lg">{info.cookName}</h3>
+                <p className="font-medium">Total Amount: ₹{info.totalAmount.toFixed(2)}</p>
+                <p className="font-medium text-primary">UPI ID / GPay: <span className="bg-muted px-2 py-1 rounded">{info.upiId}</span></p>
+                
+                <div className="mt-2 space-y-1">
+                  <p className="text-sm text-muted-foreground font-medium">Items:</p>
+                  {info.items.map(item => (
+                    <p key={item.meal._id} className="text-sm text-muted-foreground">
+                      {item.meal.name} x{item.quantity}: ₹{(item.meal.price * item.quantity).toFixed(2)}
+                    </p>
+                  ))}
+                </div>
+                
+                {index < paymentInfo.length - 1 && <Separator className="my-4" />}
+              </div>
+            ))}
+            
+            <p className="text-sm text-muted-foreground mt-4">
+              After making the payment through your UPI app, click the button below to confirm.
+            </p>
+          </div>
+        )}
+        
+        <DialogFooter>
+          {paymentComplete ? (
+            <Button onClick={() => setPaymentDialogOpen(false)} className="w-full">
+              View My Orders
+            </Button>
+          ) : (
+            <div className="w-full space-y-2">
+              <Button 
+                onClick={handleConfirmPayment} 
+                className="w-full" 
+                disabled={isCheckingOut}
+              >
+                {isCheckingOut ? "Processing..." : "I've Made the Payment"}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setPaymentDialogOpen(false)} 
+                className="w-full"
+              >
+                Cancel
+              </Button>
+            </div>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </React.Fragment>
   );
 };

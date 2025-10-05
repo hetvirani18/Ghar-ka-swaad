@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { 
   createOrder, 
+  createMultipleOrders,
   rateOrder, 
   getOrdersByUserId, 
   getOrdersByCookId,
@@ -9,6 +10,7 @@ const {
 } = require('../controllers/orderController');
 
 router.post('/', createOrder);
+router.post('/batch', createMultipleOrders);
 router.post('/:id/rate', rateOrder);
 router.post('/:id/status', updateOrderStatus);
 router.get('/user/:userId', getOrdersByUserId);

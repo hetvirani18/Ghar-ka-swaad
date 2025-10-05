@@ -23,6 +23,43 @@ exports.createOrder = asyncHandler(async (req, res) => {
   }
 });
 
+// @desc    Create multiple orders at once
+// @route   POST /api/orders/batch
+// @access  Public (should be Private in real app)
+exports.createMultipleOrders = asyncHandler(async (req, res) => {
+  const { orders } = req.body;
+  
+  if (!orders || !Array.isArray(orders) || orders.length === 0) {
+    res.status(400);
+    throw new Error('No orders provided');
+  }
+  
+  const createdOrders = [];
+  
+  for (const orderData of orders) {
+    const { userId, cookId, mealId, quantity = 1 } = orderData;
+    
+    if (!userId || !cookId || !mealId) {
+      res.status(400);
+      throw new Error('Missing required fields in order data');
+    }
+    
+    const order = await Order.create({
+      userId,
+      cookId,
+      mealId,
+      quantity,
+      status: 'Placed'
+    });
+    
+    if (order) {
+      createdOrders.push(order);
+    }
+  }
+  
+  res.status(201).json(createdOrders);
+});
+
 // @desc    Rate an order
 // @route   POST /api/orders/:id/rate
 // @access  Public (should be Private in real app)

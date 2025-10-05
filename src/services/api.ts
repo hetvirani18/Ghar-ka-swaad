@@ -209,6 +209,19 @@ export const mealsApi = {
   },
 };
 
+// Payment information API
+export const paymentApi = {
+  getCookPaymentDetails: async (cookId: string): Promise<{ name: string; upiId: string }> => {
+    const response = await fetch(`${API_URL}/cooks/${cookId}/payment-details`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch cook payment details');
+    }
+    
+    return response.json();
+  },
+};
+
 // Orders API
 export const ordersApi = {
   create: async (orderData: { userId: string; cookId: string; mealId: string }): Promise<Order> => {
@@ -236,6 +249,41 @@ export const ordersApi = {
       return response.json();
     } catch (error) {
       console.error('Order creation error:', error);
+      throw error;
+    }
+  },
+  
+  createMultiple: async (orders: { userId: string; cookId: string; mealId: string; quantity: number }[]): Promise<Order[]> => {
+    try {
+      // Validate the data before sending
+      if (!orders.length) {
+        throw new Error('No orders provided');
+      }
+      
+      orders.forEach(order => {
+        if (!order.userId || !order.cookId || !order.mealId) {
+          console.error('Invalid order data:', order);
+          throw new Error('Missing required fields in order data');
+        }
+      });
+      
+      const response = await fetch(`${API_URL}/orders/batch`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ orders }),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Server error (${response.status}):`, errorText);
+        throw new Error(`Failed to create orders: ${response.status} ${errorText}`);
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Multiple orders creation error:', error);
       throw error;
     }
   },

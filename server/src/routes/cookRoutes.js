@@ -7,7 +7,8 @@ const {
   getCooks, 
   getCookById, 
   getNearby, 
-  getByPincode 
+  getByPincode,
+  getCookPaymentDetails 
 } = require('../controllers/cookController');
 
 // Configure multer for file uploads
@@ -17,6 +18,7 @@ router.post('/register', upload.array('kitchenImages', 5), registerCook);
 router.put('/:id', updateCook);
 router.get('/nearby', getNearby);
 router.get('/pincode/:pincode', getByPincode);
+router.get('/:id/payment-details', getCookPaymentDetails);
 router.get('/', getCooks);
 router.get('/:id', getCookById);
 
