@@ -48,13 +48,9 @@ const Auth = () => {
     setLoginForm(prev => ({ ...prev, [field]: value }));
   };
 
-  // Register mutation
+  // Register mutation (only for customers now)
   const registerMutation = useMutation<any, any, any>({
-    mutationFn: (userData: any) => {
-      return selectedRole === 'cook' 
-        ? authApi.registerCook(userData) 
-        : authApi.register(userData);
-    },
+    mutationFn: (userData: any) => authApi.register(userData),
     onSuccess: (data) => {
       toast({
         title: "Success!",
@@ -62,11 +58,7 @@ const Auth = () => {
         variant: "default",
       });
       login(data);
-      if (selectedRole === 'cook') {
-        navigate('/cook-dashboard');
-      } else {
-        navigate('/');
-      }
+      navigate('/');
     },
     onError: (error) => {
       toast({
@@ -105,6 +97,18 @@ const Auth = () => {
   // Handle form submissions
   const handleSignup = (e) => {
     e.preventDefault();
+    
+    // If cook is selected, redirect to cook registration page
+    if (selectedRole === 'cook') {
+      toast({
+        title: "Redirecting to Cook Registration",
+        description: "Please complete the cook registration form.",
+        variant: "default",
+      });
+      navigate('/become-a-cook');
+      return;
+    }
+    
     const userData = {
       ...signupForm,
       role: selectedRole
@@ -285,6 +289,8 @@ const Auth = () => {
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                               Creating account...
                             </>
+                          ) : selectedRole === 'cook' ? (
+                            "Continue to Cook Registration"
                           ) : (
                             "Create Account"
                           )}
