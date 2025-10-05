@@ -10,14 +10,19 @@ import { useToast } from '../components/ui/use-toast';
 import { Loader2, Upload, X } from 'lucide-react';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
+import { useAuth } from '../context/AuthContext';
 
 const CookRegistration = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { login } = useAuth();
   const [step, setStep] = useState(1);
   
   const [formData, setFormData] = useState({
     name: '',
+    email: '',
+    password: '',
+    phone: '',
     bio: '',
     pincode: '',
     neighborhood: '',
@@ -43,18 +48,21 @@ const CookRegistration = () => {
       
       return cooksApi.register(formDataToSend);
     },
-    onSuccess: (cook) => {
+    onSuccess: (response) => {
       toast({
         title: 'Registration successful',
         description: 'You are now registered as a cook!',
       });
-      navigate('/cook-dashboard', { state: { cook } });
+      // Log in the user with the returned user data
+      login(response.user);
+      // Navigate to cook dashboard
+      navigate('/cook-dashboard', { state: { cook: response.cook } });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         variant: 'destructive',
         title: 'Registration failed',
-        description: error.message,
+        description: error.message || 'Server error during cook registration',
       });
     },
   });
@@ -91,7 +99,32 @@ const CookRegistration = () => {
   
   const nextStep = () => {
     if (step === 1) {
-      if (!formData.name || !formData.bio || !formData.pincode || !formData.neighborhood || !formData.upiId) {
+      if (!formData.name || !formData.email || !formData.password || !formData.phone) {
+        toast({
+          variant: 'destructive',
+          title: 'Please fill all required fields',
+        });
+        return;
+      }
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        toast({
+          variant: 'destructive',
+          title: 'Please enter a valid email address',
+        });
+        return;
+      }
+      if (formData.password.length < 6) {
+        toast({
+          variant: 'destructive',
+          title: 'Password must be at least 6 characters',
+        });
+        return;
+      }
+    }
+    if (step === 2) {
+      if (!formData.bio || !formData.pincode || !formData.neighborhood || !formData.upiId) {
         toast({
           variant: 'destructive',
           title: 'Please fill all required fields',
@@ -126,10 +159,21 @@ const CookRegistration = () => {
       
       <main className="flex-1 container mx-auto p-4 flex justify-center">
         <div className="w-full max-w-lg">
-          <h2 className="text-3xl font-bold text-center mb-6">Become a Cook</h2>
+          <h2 className="text-3xl font-bold text-center mb-2">Become a Cook</h2>
+          <p className="text-center text-gray-600 mb-6">
+            Join our community and start earning from your cooking skills
+          </p>
+          
+          {step === 1 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <p className="text-sm text-blue-800">
+                <strong>📋 Before you start:</strong> Make sure you have at least 3 clear photos of your kitchen ready to upload.
+              </p>
+            </div>
+          )}
           
           <div className="flex justify-center mb-8">
-            <div className="w-full max-w-xs flex items-center">
+            <div className="w-full max-w-md flex items-center">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center 
                 ${step >= 1 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600'}`}>
                 1
@@ -139,12 +183,19 @@ const CookRegistration = () => {
                 ${step >= 2 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600'}`}>
                 2
               </div>
+              <div className={`h-1 flex-1 ${step >= 3 ? 'bg-orange-500' : 'bg-gray-200'}`}></div>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center 
+                ${step >= 3 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                3
+              </div>
             </div>
           </div>
           
           <form onSubmit={handleSubmit}>
             {step === 1 && (
               <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Information</h3>
+                
                 <div>
                   <Label htmlFor="name">Full Name</Label>
                   <Input
@@ -156,6 +207,60 @@ const CookRegistration = () => {
                     required
                   />
                 </div>
+                
+                <div>
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="your@email.com"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    placeholder="+91 98765 43210"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="At least 6 characters"
+                    required
+                    minLength={6}
+                  />
+                </div>
+                
+                <Button
+                  type="button"
+                  onClick={nextStep}
+                  className="w-full mt-4"
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+            
+            {step === 2 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Cook Profile</h3>
                 
                 <div>
                   <Label htmlFor="bio">Bio</Label>
@@ -211,20 +316,33 @@ const CookRegistration = () => {
                   </p>
                 </div>
                 
-                <Button
-                  type="button"
-                  onClick={nextStep}
-                  className="w-full mt-4"
-                >
-                  Next
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={prevStep}
+                    className="flex-1"
+                  >
+                    Back
+                  </Button>
+                  
+                  <Button
+                    type="button"
+                    onClick={nextStep}
+                    className="flex-1"
+                  >
+                    Next
+                  </Button>
+                </div>
               </div>
             )}
             
-            {step === 2 && (
+            {step === 3 && (
               <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Kitchen Photos</h3>
+                
                 <div className="mb-4">
-                  <Label className="block mb-2">Kitchen Photos (at least 3)</Label>
+                  <Label className="block mb-2">Upload at least 3 photos</Label>
                   <p className="text-sm text-gray-500 mb-4">
                     Upload clear photos of your kitchen to build trust with customers
                   </p>

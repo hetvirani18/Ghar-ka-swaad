@@ -65,14 +65,15 @@ export const authApi = {
 
 // Cooks API
 export const cooksApi = {
-  register: async (formData: FormData): Promise<Cook> => {
+  register: async (formData: FormData): Promise<{ user: User; cook: Cook }> => {
     const response = await fetch(`${API_URL}/cooks/register`, {
       method: 'POST',
       body: formData,
     });
     
     if (!response.ok) {
-      throw new Error('Cook registration failed');
+      const error = await response.json();
+      throw new Error(error.message || 'Cook registration failed');
     }
     
     return response.json();
