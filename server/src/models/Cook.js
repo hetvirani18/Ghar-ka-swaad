@@ -1,36 +1,36 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const cookSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true
+    required: true,
   },
   bio: {
     type: String,
-    required: true
+    required: true,
   },
   location: {
     type: {
       type: String,
-      enum: ['Point'],
+      enum: ["Point"],
       required: false,
-      default: 'Point'
+      default: "Point",
     },
     coordinates: {
       type: [Number], // [longitude, latitude]
       required: false,
-      default: [0, 0]
+      default: [0, 0],
     },
     pincode: {
       type: String,
       required: false,
-      default: '000000'
+      default: "000000",
     },
     neighborhood: {
       type: String,
       required: false,
-      default: 'Unknown'
-    }
+      default: "Unknown",
+    },
   },
   kitchenImageUrls: {
     type: [String],
@@ -38,35 +38,35 @@ const cookSchema = new mongoose.Schema({
     default: [],
     validate: [
       {
-        validator: function(array) {
+        validator: function (array) {
           // Only validate if array has items
           if (array.length === 0) return true;
           return array.length >= 3;
         },
-        message: 'If providing kitchen images, at least 3 are required'
-      }
-    ]
+        message: "If providing kitchen images, at least 3 are required",
+      },
+    ],
   },
   upiId: {
     type: String,
     required: false,
-    default: ''
+    default: "",
   },
   averageRating: {
     type: Number,
-    default: 0
+    default: 0,
   },
   ratingCount: {
     type: Number,
-    default: 0
+    default: 0,
   },
   createdAt: {
     type: Date,
-    default: Date.now
-  }
+    default: Date.now,
+  },
 });
 
 // Create a 2dsphere index on the location field for geospatial queries
-cookSchema.index({ "location": "2dsphere" });
+cookSchema.index({ location: "2dsphere" });
 
-module.exports = mongoose.model('Cook', cookSchema);
+module.exports = mongoose.model("Cook", cookSchema);

@@ -1,6 +1,6 @@
-const User = require('../models/User');
-const Cook = require('../models/Cook');
-const asyncHandler = require('express-async-handler');
+const User = require("../models/User");
+const Cook = require("../models/Cook");
+const asyncHandler = require("express-async-handler");
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
@@ -10,10 +10,10 @@ exports.register = asyncHandler(async (req, res) => {
 
   // Check if user exists
   const userExists = await User.findOne({ email });
-  
+
   if (userExists) {
     res.status(400);
-    throw new Error('User already exists');
+    throw new Error("User already exists");
   }
 
   // Create user (no hashing for MVP)
@@ -22,7 +22,7 @@ exports.register = asyncHandler(async (req, res) => {
     email,
     password, // In a real app, this would be hashed
     phone,
-    role: 'user'
+    role: "user",
   });
 
   if (user) {
@@ -31,11 +31,11 @@ exports.register = asyncHandler(async (req, res) => {
       name: user.name,
       email: user.email,
       phone: user.phone,
-      role: user.role
+      role: user.role,
     });
   } else {
     res.status(400);
-    throw new Error('Invalid user data');
+    throw new Error("Invalid user data");
   }
 });
 
@@ -44,23 +44,23 @@ exports.register = asyncHandler(async (req, res) => {
 // @access  Public
 exports.registerCook = asyncHandler(async (req, res) => {
   try {
-  const { name, email, password, phone } = req.body;
+    const { name, email, password, phone } = req.body;
 
-  console.log('Register cook request received:', { name, email, phone });
-    
+    console.log("Register cook request received:", { name, email, phone });
+
     // Check if user exists
     const userExists = await User.findOne({ email });
-    
+
     if (userExists) {
       return res.status(400).json({
-        message: 'User already exists with this email'
+        message: "User already exists with this email",
       });
     }
 
     // Validate required fields
     if (!name || !email || !password || !phone) {
       return res.status(400).json({
-        message: 'Please provide all required fields'
+        message: "Please provide all required fields",
       });
     }
 
@@ -70,12 +70,12 @@ exports.registerCook = asyncHandler(async (req, res) => {
       email,
       password,
       phone,
-      role: 'cook'
+      role: "cook",
     });
 
     if (!user) {
       return res.status(400).json({
-        message: 'Failed to create user'
+        message: "Failed to create user",
       });
     }
 
@@ -84,7 +84,7 @@ exports.registerCook = asyncHandler(async (req, res) => {
     const cook = await Cook.create({
       name: user.name,
       bio: `Cook profile for ${user.name}. Profile setup pending.`,
-      user: user._id
+      user: user._id,
       // kitchenImageUrls and upiId will be added when cook completes profile
       // location will use schema defaults
     });
@@ -97,22 +97,25 @@ exports.registerCook = asyncHandler(async (req, res) => {
       email: user.email,
       phone: user.phone,
       role: user.role,
-      cookId: cook._id
+      cookId: cook._id,
     });
   } catch (error) {
-    console.error('Error in registerCook:', error);
-    
+    console.error("Error in registerCook:", error);
+
     // Send appropriate error response
-    const statusCode = error.name === 'ValidationError' ? 400 : 500;
+    const statusCode = error.name === "ValidationError" ? 400 : 500;
     res.status(statusCode).json({
-      message: error.name === 'ValidationError' 
-        ? 'Validation error during cook registration' 
-        : 'Server error during cook registration',
+      message:
+        error.name === "ValidationError"
+          ? "Validation error during cook registration"
+          : "Server error during cook registration",
       error: error.message,
-      details: error.errors ? Object.keys(error.errors).map(key => ({
-        field: key,
-        message: error.errors[key].message
-      })) : undefined
+      details: error.errors
+        ? Object.keys(error.errors).map((key) => ({
+            field: key,
+            message: error.errors[key].message,
+          }))
+        : undefined,
     });
   }
 });
@@ -133,10 +136,10 @@ exports.login = asyncHandler(async (req, res) => {
       name: user.name,
       email: user.email,
       phone: user.phone,
-      role: user.role
+      role: user.role,
     });
   } else {
     res.status(401);
-    throw new Error('Invalid email or password');
+    throw new Error("Invalid email or password");
   }
 });
