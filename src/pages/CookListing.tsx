@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "../components/Header";
@@ -7,7 +7,7 @@ import { CookCard } from "../components/CookCard";
 import { Button } from "../components/ui/button";
 import { Slider } from "../components/ui/slider";
 import { Input } from "../components/ui/input";
-import { Loader2, MapPin, Search, SlidersHorizontal, Compass } from "lucide-react";
+import { Loader2, Search, SlidersHorizontal } from "lucide-react";
 import { cooksApi } from "../services/api";
 import { Cook } from "../types";
 import { toast } from "../hooks/use-toast";
@@ -16,147 +16,33 @@ const CookListing = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [priceRange, setPriceRange] = useState([0, 200]);
-  const [locationSearch, setLocationSearch] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<'distance' | 'rating' | 'price'>('distance');
-  const [isLocating, setIsLocating] = useState(false);
   
-  // Get geolocation params from URL
-  const lat = searchParams.get('lat');
-  const lng = searchParams.get('lng');
-  const pincode = searchParams.get('pincode');
   
-  // Fetch nearby cooks
+  // We no longer auto-detect or restrict by user location.
+  // Always fetch all cooks by default and let users filter manually.
   const { data: cooks, isLoading, isError } = useQuery({
-    queryKey: ['cooks', lat, lng, pincode],
-    queryFn: async () => {
-      if (lat && lng) {
-        return cooksApi.getNearby(parseFloat(lat), parseFloat(lng));
-      } else if (pincode) {
-        return cooksApi.getByPincode(pincode);
-      }
-      return [];
-    },
-    enabled: !!(lat || lng || pincode),
-    placeholderData: []
-  });
-  
-  // Fetch top rated cooks as fallback
-  const { data: topRatedCooks, isLoading: isTopRatedLoading } = useQuery({
-    queryKey: ['cooks', 'top-rated'],
+    queryKey: ['cooks', 'all'],
     queryFn: async () => {
       try {
-        // Get all cooks and sort by rating on client-side
-        const allCooks = await cooksApi.getAll();
-        return allCooks.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0)).slice(0, 6);
+        return await cooksApi.getAll();
       } catch (error) {
-        console.error('Failed to fetch top rated cooks:', error);
+        console.error('Failed to fetch cooks:', error);
         return [];
       }
     },
-    enabled: !(lat || lng || pincode), // Only fetch if no location parameters
     placeholderData: []
   });
+  // keep a simplified topRatedCooks query in case UI references it; we'll derive it client-side if needed
+  const topRatedCooks = cooks ? [...cooks].sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0)).slice(0, 6) : [];
   
-  // Auto-detect location on component mount if no location params
-  useEffect(() => {
-    if (!lat && !lng && !pincode) {
-      // Try to get user's location automatically on first load
-      if (navigator.geolocation) {
-        try {
-          setIsLocating(true);
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              setIsLocating(false);
-              navigate(`/cooks?lat=${position.coords.latitude}&lng=${position.coords.longitude}`);
-              toast({
-                title: "Location detected",
-                description: "Showing cooks near your current location",
-                variant: "default"
-              });
-            },
-            (error) => {
-              setIsLocating(false);
-              console.error("Error getting location:", error);
-              
-              // Show different messages based on error code
-              let errorMsg = "Showing our top-rated cooks instead";
-              if (error.code === 1) {
-                errorMsg = "Location access denied. Please check browser permissions.";
-              } else if (error.code === 2) {
-                errorMsg = "Location unavailable. Check your device settings.";
-              } else if (error.code === 3) {
-                errorMsg = "Location request timed out. Please try again.";
-              }
-              
-              toast({
-                title: "Location not available",
-                description: errorMsg,
-                variant: "default"
-              });
-            },
-            { 
-              timeout: 10000, // Increase timeout to 10 seconds
-              maximumAge: 60000, // Accept cached positions up to 1 minute old
-              enableHighAccuracy: false // Don't require high accuracy for cook discovery
-            }
-          );
-        } catch (e) {
-          setIsLocating(false);
-          console.error("Geolocation exception:", e);
-          toast({
-            title: "Location service error",
-            description: "Could not access location services. Using top-rated cooks instead.",
-            variant: "destructive"
-          });
-        }
-      } else {
-        toast({
-          title: "Geolocation not supported",
-          description: "Your browser doesn't support location services. Showing top-rated cooks.",
-          variant: "default"
-        });
-      }
-    }
-  }, [lat, lng, pincode, navigate]);
-  
-  // Handle manual location detection
-  const detectLocation = () => {
-    if (navigator.geolocation) {
-      setIsLocating(true);
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setIsLocating(false);
-          navigate(`/cooks?lat=${position.coords.latitude}&lng=${position.coords.longitude}`);
-          toast({
-            title: "Location updated",
-            description: "Showing cooks near your current location",
-            variant: "default"
-          });
-        },
-        (error) => {
-          setIsLocating(false);
-          console.error("Error getting location:", error);
-          toast({
-            title: "Location detection failed",
-            description: error.message,
-            variant: "destructive"
-          });
-        }
-      );
-    } else {
-      toast({
-        title: "Geolocation not supported",
-        description: "Your browser doesn't support location detection",
-        variant: "destructive"
-      });
-    }
-  };
+  // location detection removed — users can filter using search, price and sort controls
   
   // Filter and sort cooks based on multiple criteria
   const filteredAndSortedCooks = cooks ? cooks
     // First filter
-    .filter((cook) => {
+  .filter((cook) => {
       // Filter by price range
       const cookHasMeals = cook.activeMeals && cook.activeMeals.length > 0;
       const priceInRange = cookHasMeals 
@@ -170,12 +56,8 @@ const CookListing = () => {
         (cookHasMeals && cook.activeMeals.some(meal => 
           meal.name.toLowerCase().includes(searchTerm.toLowerCase())));
       
-      // Filter by location search if provided
-      const matchesLocation = locationSearch === "" || 
-        (cook.location?.neighborhood && 
-          cook.location.neighborhood.toLowerCase().includes(locationSearch.toLowerCase()));
-      
-      return priceInRange && matchesSearch && matchesLocation;
+      // location-based filtering removed; rely on search and other filters
+      return priceInRange && matchesSearch;
     })
     // Then sort
     .sort((a, b) => {
@@ -224,72 +106,7 @@ const CookListing = () => {
                     <h2 className="text-lg font-semibold text-foreground">Filters</h2>
                   </div>
 
-                  {/* Location */}
-                  <div className="space-y-3 mb-6">
-                    <label className="text-sm font-medium text-foreground">Location</label>
-                    <form onSubmit={(e) => {
-                      e.preventDefault();
-                      // If the input contains only digits, assume it's a pincode and redirect
-                      if (/^\d+$/.test(locationSearch)) {
-                        navigate(`/cooks?pincode=${locationSearch}`);
-                      }
-                      // Otherwise just use it for filtering the current results
-                    }}>
-                      <div className="flex">
-                        <div className="relative flex-grow">
-                          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <input
-                            type="text"
-                            placeholder="Enter your area or pincode..."
-                            value={locationSearch}
-                            onChange={(e) => setLocationSearch(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                // Submit the parent form
-                                e.currentTarget.form?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-                              }
-                            }}
-                            className="w-full rounded-l-md border border-r-0 border-input bg-background pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                          />
-                        </div>
-                        <Button 
-                          type="submit" 
-                          className="rounded-l-none"
-                          variant="default"
-                        >
-                          Search
-                        </Button>
-                      </div>
-                    </form>
-                    <div className="flex items-center justify-center mt-2">
-                      <Button 
-                        type="button" 
-                        onClick={detectLocation}
-                        variant="outline"
-                        size="sm"
-                        className="text-xs flex items-center gap-2"
-                        disabled={isLocating}
-                      >
-                        {isLocating ? (
-                          <>
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            Detecting...
-                          </>
-                        ) : (
-                          <>
-                            <Compass className="h-3 w-3" />
-                            Use my current location
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                    {/^\d+$/.test(locationSearch) && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Enter a pincode to search for cooks in that area
-                      </p>
-                    )}
-                  </div>
+                  {/* Location filter removed — users can filter using search and other controls */}
 
                   {/* Price Range */}
                   <div className="space-y-3 mb-6">
@@ -337,7 +154,6 @@ const CookListing = () => {
                     variant="outline"
                     onClick={() => {
                       setSearchTerm("");
-                      setLocationSearch("");
                       setPriceRange([0, 200]);
                       setSortBy("distance");
                     }}
@@ -352,7 +168,7 @@ const CookListing = () => {
             <div className="lg:col-span-3">
               <div className="mb-6 flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
-                  Showing {filteredAndSortedCooks?.length || 0} cooks near you
+                  Showing {filteredAndSortedCooks?.length || 0} cooks
                 </p>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -367,7 +183,7 @@ const CookListing = () => {
               </div>
 
               
-              {isLoading || isLocating || (isTopRatedLoading && !(lat || lng || pincode)) ? (
+              {isLoading ? (
                 <div className="flex justify-center items-center py-16">
                   <Loader2 className="h-10 w-10 text-primary animate-spin" />
                 </div>
@@ -398,46 +214,17 @@ const CookListing = () => {
                     />
                   ))}
                 </div>
-              ) : topRatedCooks && topRatedCooks.length > 0 ? (
-                <>
-                  <div className="mb-6">
-                    <h2 className="text-xl font-semibold text-foreground">Top Rated Cooks</h2>
-                    <p className="text-sm text-muted-foreground">We couldn't find cooks in your selected area, so here are our highest rated cooks</p>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {topRatedCooks.map((cook) => (
-                      <CookCard 
-                        key={cook._id}
-                        id={cook._id}
-                        name={cook.name}
-                        image={cook.kitchenImageUrls?.[0] || ''}
-                        rating={cook.averageRating || 4.5}
-                        reviews={cook.ratingCount || 0}
-                        location={cook.location?.neighborhood || 'Unknown location'}
-                        todaysDish={cook.activeMeals?.[0]?.name || 'No active meals'}
-                        dishImage={cook.activeMeals?.[0]?.image || ''}
-                        price={cook.activeMeals?.[0]?.price || 0}
-                        calories={cook.activeMeals?.[0]?.calories || 350}
-                        verified={true}
-                        distance={cook.distance}
-                      />
-                    ))}
-                  </div>
-                </>
               ) : (
                 <div className="text-center py-16">
                   <p className="text-lg text-muted-foreground mb-4">No cooks found matching your criteria</p>
                   <div className="flex flex-col gap-2 items-center">
                     <Button variant="outline" onClick={() => {
                       setSearchTerm("");
-                      setLocationSearch("");
                       setPriceRange([0, 200]);
                     }}>
                       Reset Filters
                     </Button>
-                    <Button variant="default" onClick={detectLocation}>
-                      Try Using My Location
-                    </Button>
+                    {/* location detection removed */}
                   </div>
                 </div>
               )}

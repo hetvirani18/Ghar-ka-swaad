@@ -35,23 +35,12 @@ export const Hero = () => {
                 size="xl" 
                 onClick={(e) => {
                   e.preventDefault();
-                  if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                      (position) => {
-                        window.location.href = `/cooks?lat=${position.coords.latitude}&lng=${position.coords.longitude}`;
-                      },
-                      () => {
-                        // If geolocation fails, just navigate to /cooks
-                        window.location.href = "/cooks";
-                      }
-                    );
-                  } else {
-                    window.location.href = "/cooks";
-                  }
+                  // Navigate to the cooks listing; users can filter/search there.
+                  window.location.href = "/cooks";
                 }}
               >
                 <MapPin className="h-5 w-5" />
-                Find Cooks Near You
+                Find Cooks
               </Button>
               
               <Button variant="outline" size="xl" asChild>

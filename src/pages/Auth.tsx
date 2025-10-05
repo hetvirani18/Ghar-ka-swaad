@@ -27,7 +27,7 @@ const Auth = () => {
     email: '',
     phone: '',
     password: '',
-    location: ''
+    // location removed
   });
   
   const [loginForm, setLoginForm] = useState({
@@ -49,8 +49,8 @@ const Auth = () => {
   };
 
   // Register mutation
-  const registerMutation = useMutation({
-    mutationFn: (userData) => {
+  const registerMutation = useMutation<any, any, any>({
+    mutationFn: (userData: any) => {
       return selectedRole === 'cook' 
         ? authApi.registerCook(userData) 
         : authApi.register(userData);
@@ -78,8 +78,8 @@ const Auth = () => {
   });
 
   // Login mutation
-  const loginMutation = useMutation({
-    mutationFn: (credentials) => authApi.login(credentials),
+  const loginMutation = useMutation<any, any, any>({
+    mutationFn: (credentials: any) => authApi.login(credentials),
     onSuccess: (data) => {
       toast({
         title: "Welcome back!",
@@ -272,18 +272,7 @@ const Auth = () => {
                             required
                           />
                         </div>
-                        {selectedRole === "cook" && (
-                          <div className="space-y-2">
-                            <Label htmlFor="location">Location</Label>
-                            <Input 
-                              id="location" 
-                              placeholder="Your area/locality" 
-                              value={signupForm.location}
-                              onChange={handleSignupChange}
-                              required={selectedRole === "cook"}
-                            />
-                          </div>
-                        )}
+                        {/* location removed from signup form — users can set location later in profile */}
                         <Button 
                           className="w-full" 
                           variant="hero" 

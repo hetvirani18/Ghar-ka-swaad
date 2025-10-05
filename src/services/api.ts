@@ -26,7 +26,8 @@ export const authApi = {
     email: string; 
     password: string; 
     phone: string;
-    location: string;
+    // location removed — optional/handled server-side
+    [key: string]: any;
   }): Promise<User> => {
     const response = await fetch(`${API_URL}/auth/register-cook`, {
       method: 'POST',

@@ -21,49 +21,13 @@ const Home = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [coordinates, setCoordinates] = useState<{lat: number; lng: number} | null>(null);
 
-  useEffect(() => {
-    // Ask for location permission when component mounts
-    requestGeolocation();
-  }, []);
+  // Do not auto-request geolocation on mount; allow the user to opt-in via button
 
   const requestGeolocation = () => {
-    setLocationStatus('loading');
-    
-    if (!navigator.geolocation) {
-      setLocationStatus('error');
-      setErrorMessage('Geolocation is not supported by your browser');
-      return;
-    }
-    
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setCoordinates({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        });
-        setLocationStatus('success');
-        
-        // Navigate to cook listing with coordinates
-        navigate(`/cooks?lat=${position.coords.latitude}&lng=${position.coords.longitude}`);
-      },
-      (error) => {
-        setLocationStatus('error');
-        switch(error.code) {
-          case error.PERMISSION_DENIED:
-            setErrorMessage('Location access denied. Please enter your pincode.');
-            break;
-          case error.POSITION_UNAVAILABLE:
-            setErrorMessage('Location information is unavailable. Please enter your pincode.');
-            break;
-          case error.TIMEOUT:
-            setErrorMessage('The request to get your location timed out. Please enter your pincode.');
-            break;
-          default:
-            setErrorMessage('An unknown error occurred. Please enter your pincode.');
-            break;
-        }
-      }
-    );
+    // Geolocation disabled by default to avoid unexpected permissions/prompts.
+    // If users want to filter by location, they can enter pincode above or use the filters on the cooks page.
+    setLocationStatus('error');
+    setErrorMessage('Automatic location detection is disabled. Please enter your pincode or use filters on the cooks page.');
   };
 
   const handlePincodeSubmit = (e: React.FormEvent) => {
@@ -86,7 +50,7 @@ const Home = () => {
         <section className="py-12 bg-muted/30">
           <div className="container mx-auto px-4">
             <div className="max-w-2xl mx-auto text-center">
-              <h2 className="text-2xl md:text-3xl font-bold mb-6">Find Home Cooks Near You</h2>
+              <h2 className="text-2xl md:text-3xl font-bold mb-6">Find Home Cooks</h2>
               
               {locationStatus === 'error' && (
                 <Alert className="mb-6">

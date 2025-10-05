@@ -48,23 +48,6 @@ export const Header = () => {
           <Link 
             to="/cooks" 
             className="text-sm font-medium hover:text-primary transition-colors flex items-center gap-1"
-            onClick={(e) => {
-              // If already on the cooks page, use current location
-              if (window.location.pathname === "/cooks") {
-                e.preventDefault();
-                if (navigator.geolocation) {
-                  navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                      window.location.href = `/cooks?lat=${position.coords.latitude}&lng=${position.coords.longitude}`;
-                    },
-                    () => {
-                      // If geolocation fails, just navigate to /cooks
-                      window.location.href = "/cooks";
-                    }
-                  );
-                }
-              }
-            }}
           >
             <Users className="h-4 w-4" />
             Find Cooks

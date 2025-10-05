@@ -13,20 +13,23 @@ const cookSchema = new mongoose.Schema({
     type: {
       type: String,
       enum: ['Point'],
-      required: true,
+      required: false,
       default: 'Point'
     },
     coordinates: {
       type: [Number], // [longitude, latitude]
-      required: true
+      required: false,
+      default: [0, 0]
     },
     pincode: {
       type: String,
-      required: true
+      required: false,
+      default: '000000'
     },
     neighborhood: {
       type: String,
-      required: true
+      required: false,
+      default: 'Unknown'
     }
   },
   kitchenImageUrls: {

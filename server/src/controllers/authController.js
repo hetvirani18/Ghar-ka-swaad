@@ -44,9 +44,9 @@ exports.register = asyncHandler(async (req, res) => {
 // @access  Public
 exports.registerCook = asyncHandler(async (req, res) => {
   try {
-    const { name, email, password, phone, location } = req.body;
+  const { name, email, password, phone } = req.body;
 
-    console.log('Register cook request received:', { name, email, phone });
+  console.log('Register cook request received:', { name, email, phone });
     
     // Check if user exists
     const userExists = await User.findOne({ email });
@@ -79,18 +79,13 @@ exports.registerCook = asyncHandler(async (req, res) => {
       });
     }
 
-    // Create a placeholder Cook record
+    // Create a placeholder Cook record without requiring location data
     // This will be updated later with kitchen images and other details
     const cook = await Cook.create({
       name: user.name,
       bio: `Cook profile for ${user.name}`,
       user: user._id,
-      location: {
-        type: 'Point',
-        coordinates: [0, 0], // Placeholder coordinates
-        pincode: location || '000000',
-        neighborhood: 'To be updated'
-      },
+      // location left as defaults in schema
       kitchenImageUrls: [],
       upiId: ''
     });
